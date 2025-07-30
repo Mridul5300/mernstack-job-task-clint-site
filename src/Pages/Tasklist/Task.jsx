@@ -6,10 +6,10 @@ import AllTask from './AllTask';
 const Task = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [taskFilter, setTaskFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [taskFilter, setTaskFilter] = useState('');
   const [filteredTasks, setFilteredTasks] = useState([]);
-  const [categories, setCategories] = useState(['All']); 
+  const [categories, setCategories] = useState([]); 
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -24,10 +24,8 @@ const Task = () => {
         });
         setTasks(res.data);
 
-        
         const uniqueCategories = Array.from(new Set(res.data.map(task => task.category))).filter(Boolean);
-        setCategories(['All', ...uniqueCategories]);
-
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error("Error fetching tasks:", error);
       }
@@ -38,11 +36,11 @@ const Task = () => {
   useEffect(() => {
     let tempTasks = [...tasks];
 
-    if (categoryFilter !== 'All') {
+    if (categoryFilter !== '') {
       tempTasks = tempTasks.filter(task => task.category === categoryFilter);
     }
 
-    if (taskFilter !== 'All') {
+    if (taskFilter !== '') {
       tempTasks = tempTasks.filter(task => task.status === taskFilter);
     }
 
@@ -70,14 +68,14 @@ const Task = () => {
 
         setIsModalOpen(false);
       } else {
-        console.error("Task save");
+        console.error("Task not saved");
       }
     } catch (error) {
       console.error("Error adding task:", error);
     }
   };
 
-  const statuses = ['All', 'Pending', 'In Progress', 'Completed'];
+  const statuses = ['Pending', 'In Progress', 'Completed'];
 
   return (
     <div>
@@ -87,12 +85,14 @@ const Task = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <h3 className="text-xl font-semibold text-gray-800">All Task List</h3>
             <div className="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto">
-              {/* Dynamic Category Filter */}
+              
+              {/* Category Filter */}
               <select
                 className="px-4 py-2 border rounded-md text-gray-700 focus:outline-none w-full md:w-auto"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
+                <option value="" disabled>Select the Category</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
@@ -104,6 +104,7 @@ const Task = () => {
                 value={taskFilter}
                 onChange={(e) => setTaskFilter(e.target.value)}
               >
+                <option value="" disabled>Select Status</option>
                 {statuses.map((status) => (
                   <option key={status} value={status}>{status}</option>
                 ))}
