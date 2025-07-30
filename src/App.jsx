@@ -1,12 +1,17 @@
+import { Outlet } from 'react-router-dom'
 import './App.css'
+import Navbar from './Pages/Navbar/Navbar'
 
 function App() {
 
 
   return (
-    <>
-      <h2 className='text-5xl text-amber-300'>Hellow World</h2>
-    </>
+  <div>
+    <Navbar />
+    <main>
+      <Outlet />
+    </main>
+  </div>
   )
 }
 
