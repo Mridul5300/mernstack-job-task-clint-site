@@ -1,36 +1,137 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import TaskAdd from './TaskAdd';
+import axios from 'axios';
+import AllTask from './AllTask';
 
 const Task = () => {
-     return (
-          <div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white border border-gray-200 rounded-lg p-4 shadow hover:shadow-md transition"
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [taskFilter, setTaskFilter] = useState('All');
+  const [filteredTasks, setFilteredTasks] = useState([]);
+  const [categories, setCategories] = useState(['All']); 
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          console.error("No access token found! Please login first.");
+          return;
+        }
+        const res = await axios.get("http://localhost:5000/alltask", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTasks(res.data);
+
+        
+        const uniqueCategories = Array.from(new Set(res.data.map(task => task.category))).filter(Boolean);
+        setCategories(['All', ...uniqueCategories]);
+
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      }
+    };
+    fetchTasks();
+  }, []);
+
+  useEffect(() => {
+    let tempTasks = [...tasks];
+
+    if (categoryFilter !== 'All') {
+      tempTasks = tempTasks.filter(task => task.category === categoryFilter);
+    }
+
+    if (taskFilter !== 'All') {
+      tempTasks = tempTasks.filter(task => task.status === taskFilter);
+    }
+
+    setFilteredTasks(tempTasks);
+  }, [tasks, categoryFilter, taskFilter]);
+
+  const handleAddTask = async (newTask) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found! Please login first.");
+        return;
+      }
+      const response = await axios.post("http://localhost:5000/task", newTask, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.insertedId) {
+        const addedTask = { ...newTask, _id: response.data.insertedId };
+        setTasks((prev) => [...prev, addedTask]);
+
+        if (addedTask.category && !categories.includes(addedTask.category)) {
+          setCategories(prev => [...prev, addedTask.category]);
+        }
+
+        setIsModalOpen(false);
+      } else {
+        console.error("Task save");
+      }
+    } catch (error) {
+      console.error("Error adding task:", error);
+    }
+  };
+
+  const statuses = ['All', 'Pending', 'In Progress', 'Completed'];
+
+  return (
+    <div>
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-30 sm:mt-3 md:-mt-10">
+        <div className="bg-white rounded-xl shadow p-6 mb-10 border border-gray-200">
+          {/* Filter Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <h3 className="text-xl font-semibold text-gray-800">All Task List</h3>
+            <div className="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto">
+              {/* Dynamic Category Filter */}
+              <select
+                className="px-4 py-2 border rounded-md text-gray-700 focus:outline-none w-full md:w-auto"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
               >
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-[#E8F5E9] p-2 rounded-full text-green-600 text-lg">🎨</div>
-                    <h4 className="text-lg font-semibold text-gray-800">Art and Craft</h4>
-                  </div>
-                  <button className="text-red-400 hover:text-red-600 text-xl">🗑️</button>
-                </div>
-                <p className="text-sm text-gray-500 mb-4">
-                  Select the role that you want to candidates for and upload your job description.
-                </p>
-                <div className="flex justify-between items-center text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <span>📅</span>
-                    <span>Friday, April 19 – 2024</span>
-                  </div>
-                  <div className="font-semibold text-purple-500">● Pending</div>
-                </div>
-              </div>
-            ))}
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              {/* Status Filter */}
+              <select
+                className="px-4 py-2 border rounded-md text-gray-700 focus:outline-none w-full md:w-auto"
+                value={taskFilter}
+                onChange={(e) => setTaskFilter(e.target.value)}
+              >
+                {statuses.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-[#00E676] text-white px-5 py-2 rounded-md hover:bg-[#00c763] w-full md:w-auto"
+              >
+                + Add New Task
+              </button>
+            </div>
           </div>
+
+          {/* Task Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AllTask tasks={filteredTasks} />
           </div>
-     );
+        </div>
+      </div>
+
+      <TaskAdd
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddTask={handleAddTask}
+      />
+    </div>
+  );
 };
 
 export default Task;

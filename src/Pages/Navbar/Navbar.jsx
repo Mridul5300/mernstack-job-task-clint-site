@@ -1,10 +1,40 @@
-import Home from "../Home";
-import Task from "../Tasklist/Task";
-
+import React, { useContext, useState, useRef, useEffect } from "react";
+import { AuthContext } from "../../Auth/AuthProvider";
+import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
-     return (
- <div className="min-h-screen">
+  const { user, logout } = useContext(AuthContext);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef();
+  const navigate = useNavigate();
+
+  // Click outside dropdown to close it
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+
+  const handleLogout = async () => {
+    try {
+      await logout();            
+      setDropdownOpen(false);   
+      navigate("/login");      
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
       {/* Navbar */}
       <div className="relative py-8 px-6 bg-gradient-to-r from-[#0F2027] via-[#203A43] to-[#2C5364]">
         <nav className="flex justify-between items-center text-white relative z-10">
@@ -13,57 +43,74 @@ const Navbar = () => {
 
           {/* Center menu */}
           <div className="flex items-center gap-6">
-            <span className="text-[#8DFF8B] font-medium cursor-pointer">Task List</span>
-            <span className="text-white hover:text-[#8DFF8B] transition cursor-pointer">Spin</span>
+            <Link to="/" className="text-[#8DFF8B] font-medium cursor-pointer">
+              Task List
+            </Link>
+            <Link to={'spin'} className="text-white hover:text-[#8DFF8B] transition cursor-pointer">
+              Spin
+            </Link>
           </div>
 
           {/* Right */}
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center font-bold">
-              T
+          {user ? (
+            <div className="relative z-10" ref={dropdownRef}>
+              <div
+                className="flex items-center gap-3 cursor-pointer select-none"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center font-bold">
+                  {user?.name?.[0]?.toUpperCase() || "U"}
+                </div>
+                <span className="font-semibold text-white">{user?.name || "User"}</span>
+              </div>
+
+              {dropdownOpen && (
+                <div className="absolute top-12 right-0 bg-white text-black rounded shadow-lg p-2 z-20 w-32">
+                  <ul>
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
-            <span className="font-semibold text-white">Thomas M.</span>
-          </div>
+          ) : (
+            <div className="flex gap-4">
+              <Link
+                to="/login"
+                className="text-[#8DFF8B] font-semibold hover:underline"
+              >
+                Login
+              </Link>
+              <Link
+                to="/signin"
+                className="text-[#8DFF8B] font-semibold hover:underline"
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Background image on right side */}
         <div
-          className="absolute right-0 top-0 h-full w-100 bg-cover bg-no-repeat bg-right opacity-20 pointer-events-none"
+          className="absolute right-0 top-0 h-full w-full bg-cover bg-no-repeat bg-right opacity-20 pointer-events-none"
           style={{ backgroundImage: "url('/Comon.JPG')" }}
         ></div>
 
         {/* Header Text */}
         <div className="relative z-10 mt-6 mb-6">
-          <h1 className="text-xl font-medium text-[#00E676] mb-1">Hi Thomas</h1>
+          <h1 className="text-xl font-medium text-[#00E676] mb-1">
+            Hi {user?.name || "Guest"}
+          </h1>
           <h2 className="text-3xl font-bold text-white mb-4">Welcome to Dashboard</h2>
         </div>
       </div>
-
-      {/* Dashboard Content */}
-      <div className="max-w-full mx-auto px-6 py-4  -mt-14 relative z-20">
-        {/* Filter Section */}
-        <div className="bg-white rounded-xl shadow p-6 mb-10 border border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <h3 className="text-xl font-semibold text-gray-800">All Task List</h3>
-            <div className="flex flex-col md:flex-row gap-3 items-center">
-              <select className="px-4 py-2 border rounded-md text-gray-700 focus:outline-none">
-                <option>Select Task Category</option>
-              </select>
-              <select className="px-4 py-2 border rounded-md text-gray-700 focus:outline-none">
-                <option>All Task</option>
-              </select>
-              <button className="bg-[#00E676] text-white px-5 py-2 rounded-md hover:bg-[#00c763]">
-                + Add New Task
-              </button>
-            </div>
-          </div>
-
-          {/* Grid of Task Cards */}
-          <Task></Task>
-        </div>
-      </div>
     </div>
-     );
+  );
 };
 
 export default Navbar;
